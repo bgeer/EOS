@@ -37,11 +37,11 @@ void new_file(){
        	string str_text;
 	string answer;
 	while(str_fname.empty()){
-			cout << "Bestand naam: ";
+			cout << "File name:  ";
 			getline(cin, str_fname);
 	}
 	const char * fname = str_fname.c_str();
-	if(syscall(SYS_open, fname, O_RDONLY > 0)){
+	if(syscall(SYS_open, fname, O_RDONLY) > 0){
 		cout << "File already exists, Do you want to continue?";
 		cout << "(y,N): ";
 		getline(cin, answer);
@@ -50,27 +50,70 @@ void new_file(){
 		answer = "y";
 	}
 	if(answer == "y"){
-
+		int fd = syscall(SYS_open, fname, O_WRONLY | O_CREAT, mode_t S_IRWXU);
+		cout << "Write here your text: \n";
+		getline(cin,str_text);
+		str_text.append("<EOF>");
+		const void * text = str_text.c_str();
+		syscall(SYS_write, fd, text, str_text.size());	
 	}
-	cout << "ToDo: Implementeer hier new_file()" << endl; 
 }
 
 void list(){ 
-	cout << "ToDo: Implementeer hier list()" << endl; 
+	pid_t pid = fork();
+	int status;
+	if(pid == 0){
+		execlp("ls", "ls", "-la", NULL);
+	}else{
+		wait(NULL);
+	}	
 }
 
 void find(){ 
-	cout << "ToDo: Implementeer hier find()" << endl; 
+	int pid;
+	int pip[2];
+	int status;
+	string str_search;
+
+	cout << "Search: ";
+	getline(cin, str_search);
+	const char * search = str_search.c_str();
+
+	pipe(pip);
+	pid = fork();
+
+	if(pid == 0){
+		dup2(pip[1], 1);
+		close(pip[0]);
+		close(pip[1]);
+		execlp("find", "find", ".", NULL);
+	}else{
+		wait(NULL);
+	}
+	pid = fork();
+	if(pid == 0){
+		dup2(pip[0], 0);
+		close(pip[0]);
+		close(pip[1]);
+		execlp("grep", "grep", search, NULL);
+	}
+	close(pip[0]);
+	close(pip[1]);
+	wait(NULL);
 }
 
 void python(){ 
-	cout << "ToDo: Implementeer hier python()" << endl; 
+	pid_t pid = fork();
+	if(pid == 0){
+		execlp("python", "python", NULL);
+	}else{
+		wait(NULL);
+	}
 }
 
-void src() // Voorbeeld: Gebruikt SYS_open en SYS_read om de source van de shell (shell.cc) te printen.
-{ 
-	int fd = syscall(SYS_open, "shell.cc", O_RDONLY, 0755); // Gebruik de SYS_open call om een bestand te openen.
-	char byte[1];                                           // 0755 zorgt dat het bestand de juiste rechten krijg									t (leesbaar is).
-  	while(syscall(SYS_read, fd, byte, 1))                   // Blijf SYS_read herhalen tot het bestand geheel gel									ezen is,
-    		cout << byte;
-}                                  				//   zet de gelezen byte in "byte" zodat deze geschre									ven kan worden.
+void src(){ 
+	int fd = syscall(SYS_open, "shell.cc", O_RDONLY, 0755);
+	char byte[1];
+	while(syscall(SYS_read, fd, byte, 1))
+		cout << byte;
+}
