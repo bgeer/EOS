@@ -1,8 +1,10 @@
 #include <iostream>
-#include <fstream>
 #include <unistd.h>  // syscall()
 #include <syscall.h> // SysCall nummers
 #include <fcntl.h>   // O_RDONLY
+#include <stdio.h>
+#include <sys/wait.h>
+
 
 int main();
 void new_file();
